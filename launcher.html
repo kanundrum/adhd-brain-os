@@ -3,831 +3,1107 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ADHD Brain OS — AI Launcher</title>
+  <title>ADHD Brain OS — AI Assistant</title>
   <style>
+    :root {
+      --bg: #1a1a1a;
+      --surface: #252525;
+      --surface2: #2f2f2f;
+      --border: #3a3a3a;
+      --text: #e2e2e2;
+      --muted: #888;
+      --accent: #5e9cf5;
+      --accent-hover: #4a8ae8;
+      --radius: 8px;
+      --header-h: 58px;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #ffffff;
-      color: #1a1a1a;
-      font-size: 14px;
-      line-height: 1.5;
-      padding: 16px;
-      max-width: 680px;
-      margin: 0 auto;
-    }
-
-    .header {
-      margin-bottom: 14px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid #e8e8e8;
-    }
-    .header h1 { font-size: 17px; font-weight: 700; }
-    .header p  { font-size: 12px; color: #888; margin-top: 2px; }
-
-    /* Prompt tabs */
-    .prompt-tabs {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
       display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      margin-bottom: 14px;
-    }
-    .prompt-tab {
-      padding: 5px 12px;
-      border: 1.5px solid #e0e0e0;
-      border-radius: 20px;
-      background: #f7f7f7;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 500;
-      color: #555;
-      transition: all 0.12s;
-    }
-    .prompt-tab:hover  { border-color: #E87040; color: #E87040; background: #fff9f6; }
-    .prompt-tab.active { background: #E87040; border-color: #E87040; color: #fff; }
-
-    /* Form fields */
-    .form-group { margin-bottom: 12px; }
-    label {
-      display: block;
-      font-size: 11.5px;
-      font-weight: 600;
-      color: #444;
-      margin-bottom: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-    }
-    input[type="text"], textarea, select {
-      width: 100%;
-      padding: 8px 10px;
-      border: 1.5px solid #e0e0e0;
-      border-radius: 6px;
-      font-size: 13px;
-      font-family: inherit;
-      color: #1a1a1a;
-      background: #fff;
-      outline: none;
-      transition: border-color 0.12s;
-    }
-    input[type="text"]:focus, textarea:focus, select:focus { border-color: #E87040; }
-    textarea { min-height: 78px; resize: vertical; }
-    select {
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23999' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 10px center;
-      padding-right: 28px;
-      cursor: pointer;
+      flex-direction: column;
     }
 
-    /* AI section */
-    .ai-section {
-      background: #f8f8f8;
-      border: 1px solid #e4e4e4;
-      border-radius: 8px;
-      padding: 12px 14px;
-      margin-top: 16px;
-    }
-    .ai-section-title {
-      font-size: 10.5px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      color: #999;
-      margin-bottom: 10px;
-    }
-    .ai-row {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-    .ai-select { flex: 1; min-width: 150px; }
-    .ai-select select { background: #fff; }
-
-    .compare-label {
+    /* ── STICKY HEADER ── */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 20px;
+      height: var(--header-h);
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+
+    .header-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+    .page-icon   { font-size: 22px; line-height: 1; flex-shrink: 0; }
+    .page-title  { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .page-sub    { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    .settings-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 6px 12px;
+      border-radius: var(--radius);
       font-size: 12px;
-      color: #555;
       cursor: pointer;
-      user-select: none;
       white-space: nowrap;
+      flex-shrink: 0;
+      transition: color 0.2s, border-color 0.2s;
     }
-    .compare-label input { cursor: pointer; accent-color: #4A90D9; }
+    .settings-btn:hover { color: var(--text); border-color: var(--text); }
 
-    .compare-row {
+    /* ── OVERLAY ── */
+    .overlay {
       display: none;
-      margin-top: 8px;
-      gap: 10px;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 200;
       align-items: center;
-      flex-wrap: wrap;
+      justify-content: center;
+      padding: 20px;
     }
-    .compare-row.visible { display: flex; }
-    .compare-hint { font-size: 11px; color: #aaa; }
+    .overlay.visible { display: flex; }
 
-    /* Buttons */
-    .button-row {
+    .setup-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      width: 100%;
+      max-width: 500px;
       display: flex;
-      gap: 8px;
-      margin-top: 14px;
-      flex-wrap: wrap;
+      flex-direction: column;
+      gap: 18px;
+      max-height: 90vh;
+      overflow-y: auto;
     }
-    .btn {
-      padding: 9px 20px;
+
+    .setup-title { font-size: 18px; font-weight: 700; }
+    .setup-desc  { font-size: 13px; color: var(--muted); line-height: 1.65; margin-top: 6px; }
+    .setup-desc a { color: var(--accent); text-decoration: none; }
+    .setup-desc a:hover { text-decoration: underline; }
+
+    .setup-field { display: flex; flex-direction: column; gap: 6px; }
+    .setup-field label { font-size: 13px; font-weight: 500; color: var(--muted); }
+
+    .setup-field input,
+    .setup-field select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-family: inherit;
+      width: 100%;
+      transition: border-color 0.2s;
+    }
+    .setup-field input:focus,
+    .setup-field select:focus { outline: none; border-color: var(--accent); }
+
+    .setup-field select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23888' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      cursor: pointer;
+      padding-right: 36px;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+      background: var(--surface2);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      border-left: 3px solid var(--border);
+    }
+    .hint a { color: var(--accent); text-decoration: none; }
+    .hint.free  { border-left-color: #4caf82; }
+    .hint.paid  { border-left-color: #f5a623; }
+
+    .setup-actions { display: flex; gap: 10px; }
+
+    .btn-primary {
+      flex: 1;
+      background: var(--accent);
+      color: white;
       border: none;
-      border-radius: 6px;
-      font-size: 13px;
+      padding: 11px 20px;
+      border-radius: var(--radius);
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.12s;
-      white-space: nowrap;
+      transition: background 0.2s;
     }
-    .btn-send    { background: #E87040; color: #fff; }
-    .btn-send:hover    { background: #d15e2d; }
-    .btn-compare { background: #4A90D9; color: #fff; }
-    .btn-compare:hover { background: #3578c0; }
-    .btn-copy    { background: #f0f0f0; color: #444; border: 1px solid #ddd; }
-    .btn-copy:hover    { background: #e4e4e4; }
+    .btn-primary:hover { background: var(--accent-hover); }
 
-    .status {
-      margin-top: 8px;
-      font-size: 12px;
-      color: #aaa;
-      min-height: 16px;
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 11px 16px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      cursor: pointer;
+      transition: color 0.2s;
     }
-    .status.ok  { color: #519872; }
-    .status.err { color: #cc4444; }
+    .btn-secondary:hover { color: var(--text); }
+
+    /* ── MAIN ── */
+    main {
+      flex: 1;
+      padding: 20px;
+      max-width: 680px;
+      width: 100%;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .no-key-banner {
+      background: #1f2a1f;
+      border: 1px solid #3a5a3a;
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #90c890;
+      cursor: pointer;
+      display: none;
+    }
+    .no-key-banner:hover { border-color: #5a8a5a; }
+
+    select.template-select {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 36px 10px 14px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23888' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+    }
+    select.template-select:focus { outline: none; border-color: var(--accent); }
+
+    .fields { display: flex; flex-direction: column; gap: 12px; }
+    .field-group { display: flex; flex-direction: column; gap: 6px; }
+
+    label { font-size: 13px; font-weight: 500; color: var(--muted); }
+
+    input[type="text"], textarea, select.field-input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus,
+    textarea:focus,
+    select.field-input:focus { outline: none; border-color: var(--accent); }
+    textarea { min-height: 100px; resize: vertical; line-height: 1.6; }
+
+    .send-btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 13px 24px;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .send-btn:hover:not(:disabled) { background: var(--accent-hover); }
+    .send-btn:disabled { background: var(--surface2); color: var(--muted); cursor: not-allowed; }
+
+    .response-wrap { display: none; flex-direction: column; gap: 8px; }
+    .response-wrap.visible { display: flex; }
+
+    .response-header { display: flex; align-items: center; justify-content: space-between; }
+    .response-label  { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .model-badge {
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--surface2);
+      padding: 2px 8px;
+      border-radius: 99px;
+      border: 1px solid var(--border);
+    }
+
+    .response-area {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      font-size: 14px;
+      line-height: 1.75;
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 80px;
+    }
+    .thinking { color: var(--muted); font-style: italic; }
+
+    .reset-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 8px 16px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      cursor: pointer;
+      align-self: flex-start;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .reset-btn:hover { color: var(--text); border-color: var(--text); }
+
+    footer {
+      text-align: center;
+      font-size: 11px;
+      color: var(--muted);
+      padding: 16px;
+    }
+
+    @media (max-width: 480px) {
+      main { padding: 14px; }
+      header { padding: 0 14px; }
+      .setup-card { padding: 20px; }
+    }
   </style>
 </head>
 <body>
 
-<div class="header">
-  <h1 id="page-title">🤖 AI Launcher</h1>
-  <p id="page-subtitle">Fill in the fields — your AI gets the rest.</p>
-</div>
+<!-- STICKY HEADER -->
+<header>
+  <div class="header-left">
+    <span class="page-icon" id="pageIcon">🤖</span>
+    <div>
+      <div class="page-title" id="pageTitle">AI Assistant</div>
+      <div class="page-sub">ADHD Brain OS</div>
+    </div>
+  </div>
+  <button class="settings-btn" onclick="openSettings()">⚙ Settings</button>
+</header>
 
-<div class="prompt-tabs" id="prompt-tabs"></div>
-<div id="form-container"></div>
+<!-- SETUP / SETTINGS OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="setup-card">
+    <div>
+      <div class="setup-title" id="setupTitle">👋 One-time setup</div>
+      <div class="setup-desc">
+        Connect your AI provider. Your key is saved in your browser only — never shared with anyone.
+      </div>
+    </div>
 
-<div class="ai-section">
-  <div class="ai-section-title">Send to AI</div>
-  <div class="ai-row">
-    <div class="ai-select">
-      <select id="ai-primary">
-        <option value="claude">Claude (Anthropic)</option>
-        <option value="chatgpt">ChatGPT (OpenAI)</option>
-        <option value="copilot">Copilot (Microsoft)</option>
-        <option value="gemini">Gemini (Google)</option>
-        <option value="perplexity">Perplexity</option>
+    <!-- Provider -->
+    <div class="setup-field">
+      <label for="providerSelect">AI Provider</label>
+      <select id="providerSelect" onchange="onProviderChange()">
+        <option value="groq">Groq (Free — recommended)</option>
+        <option value="openai">OpenAI / ChatGPT (Paid)</option>
       </select>
     </div>
-    <label class="compare-label">
-      <input type="checkbox" id="compare-toggle"> Compare two AIs
-    </label>
-  </div>
-  <div class="compare-row" id="compare-row">
-    <div class="ai-select">
-      <select id="ai-secondary">
-        <option value="chatgpt">ChatGPT (OpenAI)</option>
-        <option value="claude">Claude (Anthropic)</option>
-        <option value="copilot">Copilot (Microsoft)</option>
-        <option value="gemini">Gemini (Google)</option>
-        <option value="perplexity">Perplexity</option>
-      </select>
+
+    <!-- Provider hint -->
+    <div class="hint free" id="providerHint">
+      ✅ <strong>Groq is free.</strong> Get your key at
+      <a href="https://console.groq.com" target="_blank">console.groq.com</a> — takes 2 minutes.
+      No credit card required.
     </div>
-    <span class="compare-hint">Opens both in new tabs side by side</span>
+
+    <!-- API Key -->
+    <div class="setup-field">
+      <label for="keyInput" id="keyLabel">Groq API Key</label>
+      <input type="text" id="keyInput" placeholder="gsk_..." autocomplete="off" spellcheck="false">
+    </div>
+
+    <!-- Model -->
+    <div class="setup-field">
+      <label for="modelSelect">Model</label>
+      <select id="modelSelect"></select>
+    </div>
+
+    <div class="setup-actions">
+      <button class="btn-primary" onclick="saveSettings()">Save & Start</button>
+      <button class="btn-secondary" id="cancelBtn" onclick="closeSettings()" style="display:none">Cancel</button>
+    </div>
   </div>
 </div>
 
-<div class="button-row">
-  <button class="btn btn-send"    id="btn-send">Send →</button>
-  <button class="btn btn-compare" id="btn-compare" style="display:none">Compare →</button>
-  <button class="btn btn-copy"    id="btn-copy">Copy prompt</button>
-</div>
-<div class="status" id="status"></div>
+<!-- MAIN -->
+<main>
+  <div class="no-key-banner" id="noKeyBanner" onclick="openSettings()">
+    🔑 No API key set — click here to connect your AI provider and get started.
+  </div>
+
+  <select class="template-select" id="templateSelect" onchange="onTemplateChange()"></select>
+
+  <div class="fields" id="fields"></div>
+
+  <button class="send-btn" id="sendBtn" onclick="sendPrompt()">
+    <span id="btnText">Send to AI →</span>
+  </button>
+
+  <div class="response-wrap" id="responseWrap">
+    <div class="response-header">
+      <div class="response-label">AI Response</div>
+      <div class="model-badge" id="modelBadge"></div>
+    </div>
+    <div class="response-area" id="responseArea"></div>
+    <button class="reset-btn" onclick="resetResponse()">← Ask another question</button>
+  </div>
+</main>
+
+<footer id="footer">Powered by Groq · Your key, your usage · No account sharing</footer>
 
 <script>
-// ─── AI URL BUILDERS ──────────────────────────────────────────────────
-const AI = {
-  claude:      p => `https://claude.ai/new?q=${encodeURIComponent(p)}`,
-  chatgpt:     p => `https://chatgpt.com/?q=${encodeURIComponent(p)}`,
-  gemini:      p => `https://gemini.google.com/app?q=${encodeURIComponent(p)}`,
-  perplexity:  p => `https://www.perplexity.ai/?q=${encodeURIComponent(p)}`,
-  copilot:     p => `https://copilot.microsoft.com/?q=${encodeURIComponent(p)}`
+// ─────────────────────────────────────────────────────────────
+//  PROVIDER CONFIG
+// ─────────────────────────────────────────────────────────────
+const PROVIDERS = {
+  groq: {
+    name: 'Groq',
+    keyPlaceholder: 'gsk_...',
+    keyLabel: 'Groq API Key',
+    endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+    format: 'openai',
+    free: true,
+    hint: '✅ <strong>Groq is free — no credit card needed.</strong><br><br>To get your key:<br>1. Go to <a href="https://console.groq.com" target="_blank">console.groq.com</a> and sign up<br>2. In the left sidebar click <strong>API Keys</strong><br>3. Click <strong>Create API Key</strong>, give it any name<br>4. Copy the key and paste it below<br><br>⚠️ The key is only shown once — copy it before closing.',
+    hintClass: 'free',
+    models: [
+      { value: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B — Default (best quality)' },
+      { value: 'llama-3.1-8b-instant',    label: 'Llama 3.1 8B Instant — Fastest'         },
+      { value: 'gemma2-9b-it',            label: 'Gemma 2 9B — Google model'               },
+      { value: 'mixtral-8x7b-32768',      label: 'Mixtral 8x7B — Strong reasoning'         },
+    ],
+    footerText: 'Powered by Groq · Your key, your usage · Free tier'
+  },
+  openai: {
+    name: 'OpenAI',
+    keyPlaceholder: 'sk-...',
+    keyLabel: 'OpenAI API Key',
+    endpoint: 'https://api.openai.com/v1/chat/completions',
+    format: 'openai',
+    free: false,
+    hint: '💳 <strong>OpenAI requires a paid account.</strong><br><br>To get your key:<br>1. Go to <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a><br>2. Click <strong>Create new secret key</strong><br>3. Copy the key and paste it below<br><br>Tip: GPT-4o Mini is the most affordable model.',
+    hintClass: 'paid',
+    models: [
+      { value: 'gpt-4o-mini', label: 'GPT-4o Mini — Most affordable (recommended)' },
+      { value: 'gpt-4o',      label: 'GPT-4o — Best quality (higher cost)'          },
+    ],
+    footerText: 'Powered by OpenAI · Your key, your usage · Paid tier'
+  }
 };
 
-// ─── PROMPT LIBRARY ───────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+//  STORAGE
+// ─────────────────────────────────────────────────────────────
+const LS = {
+  provider: 'adhd_provider',
+  key:      'adhd_api_key',
+  model:    'adhd_model'
+};
+
+const get = k  => localStorage.getItem(k) || '';
+const set = (k, v) => localStorage.setItem(k, v);
+
+function getProvider() { return get(LS.provider) || 'groq'; }
+function getKey()      { return get(LS.key); }
+function getModel()    { return get(LS.model) || PROVIDERS.groq.models[0].value; }
+
+// ─────────────────────────────────────────────────────────────
+//  PROMPT TEMPLATES
+// ─────────────────────────────────────────────────────────────
 const PAGES = {
-
   home: {
-    title: '🏠 Home Dashboard', subtitle: 'Quick actions for your daily launchpad.',
-    prompts: [
-      { id:'top3', label:'Pick My Top 3',
-        fields:[
-          { id:'tasks',  label:'Everything on my plate right now', type:'textarea', ph:'List every task — even the impossible-feeling ones...' },
-          { id:'energy', label:'My energy level today',            type:'select',   opts:['High','Medium','Low'] }
+    icon: '🏠', title: 'AI Help',
+    templates: [
+      // ── General ──
+      {
+        label: "🏠 I'm stuck — help me figure out what to do",
+        fields: [
+          { id: 'situation', label: "What's going on?", type: 'textarea',
+            placeholder: "Describe what you're stuck on..." }
         ],
-        build: f=>`I have ADHD and need help picking my Top 3 priorities for today.
-
-Everything on my plate:
-${f.tasks}
-
-Energy level: ${f.energy}
-
-Give me exactly 3 tasks ranked in order. For each one, tell me WHY it made the cut.
-No preamble. No intro. Just the 3 tasks and the reasons. Done.`
+        build: f => `I have ADHD and I'm stuck. Help me figure out the single best next action right now.\n\nSituation: ${f.situation}\n\nBe direct. One thing to do, why it's the right call, first step as small as possible.`
       },
-      { id:'overwhelmed', label:"I'm Overwhelmed",
-        fields:[
-          { id:'situation', label:"What's happening",  type:'textarea', ph:"2–3 sentences. Don't overthink it." },
-          { id:'state',     label:'Physical state',    type:'select',   opts:['Tired','Wired','Anxious','Numb'] },
-          { id:'time',      label:'Time I have',       type:'text',     ph:'e.g. 10 minutes' }
+      {
+        label: "🏠 I'm overwhelmed — help me triage",
+        fields: [
+          { id: 'items', label: "What's on your mind right now?", type: 'textarea',
+            placeholder: "List everything — tasks, worries, anything..." }
         ],
-        build: f=>`I have ADHD and I'm overwhelmed right now.
+        build: f => `I have ADHD and I'm overwhelmed. Everything on my mind:\n\n${f.items}\n\nHelp me triage. What needs attention today? What can wait? What should I drop? Direct, not reassuring.`
+      },
+      {
+        label: "🏠 Pick my Top 3 for today",
+        fields: [
+          { id: 'everything', label: "What's on your plate today?", type: 'textarea',
+            placeholder: "Meetings, tasks, commitments, anything..." },
+          { id: 'energy', label: "Energy level", type: 'select',
+            options: ['🔋 High', '⚡ Medium', '😴 Low'] }
+        ],
+        build: f => `Help me pick my Top 3 priorities for today. I have ADHD and I need a realistic list, not an aspirational one.\n\nEverything on my plate:\n${f.everything}\n\nEnergy: ${f.energy}\n\nGive me exactly 3. If I only do these 3 today, the day is a win. Everything else deprioritized. Be ruthless.`
+      },
+      // ── Planning ──
+      {
+        label: "📅 Help me plan my day",
+        fields: [
+          { id: 'tasks',     label: "What needs to happen today?",   type: 'textarea', placeholder: 'Tasks, meetings, commitments...' },
+          { id: 'energy',    label: 'Energy level this morning',     type: 'select',   options: ['🔋 High', '⚡ Medium', '😴 Low'] },
+          { id: 'available', label: 'Hours realistically available', type: 'select',   options: ['1–2 hours', '3–4 hours', '5–6 hours', 'Full day'] }
+        ],
+        build: f => `Help me plan my day. I have ADHD and I consistently overestimate what I can do.\n\nWhat needs to happen:\n${f.tasks}\n\nEnergy: ${f.energy}\nRealistic hours available: ${f.available}\n\nGive me: a realistic plan (not everything — just what fits), a suggested order based on my energy, and one thing to protect no matter what else falls apart.`
+      },
+      {
+        label: "📅 Help me time-block my day",
+        fields: [
+          { id: 'tasks',  label: 'Tasks to schedule',          type: 'textarea', placeholder: 'List tasks with rough time estimates...' },
+          { id: 'hours',  label: 'Your available hours today',  type: 'text',     placeholder: 'e.g. 9am–12pm, 2pm–5pm' },
+          { id: 'energy', label: 'When is your peak energy?',   type: 'select',   options: ['Morning (before noon)', 'Midday (noon–2pm)', 'Afternoon (2–5pm)', 'Evening (after 5pm)', 'No clear pattern'] }
+        ],
+        build: f => `Help me time-block my day. I have ADHD — I need structure but not so rigid it breaks the moment one thing shifts.\n\nTasks:\n${f.tasks}\n\nAvailable hours: ${f.hours}\nPeak energy: ${f.energy}\n\nPuts hard tasks during peak energy, groups similar tasks, includes a buffer block, has a clear stopping point.`
+      },
+      {
+        label: "📅 My day went sideways — help me reset",
+        fields: [
+          { id: 'plan',    label: 'What was your plan?',         type: 'textarea', placeholder: 'What you intended to do...' },
+          { id: 'reality', label: "What actually happened?",     type: 'textarea', placeholder: 'Interruptions, rabbit holes...' },
+          { id: 'left',    label: 'Hours left in your day',      type: 'select',   options: ['Less than 1 hour', '1–2 hours', '2–3 hours', 'More than 3 hours'] }
+        ],
+        build: f => `My day went sideways and I need to reset. I have ADHD.\n\nPlan: ${f.plan}\nWhat happened: ${f.reality}\nHours left: ${f.left}\n\nDon't lecture me. Given what's left, what 1–2 things can I still realistically do, and what's the single most useful thing to do in the next 30 minutes.`
+      },
+      {
+        label: "📅 End of day reflection",
+        fields: [
+          { id: 'did',   label: "What did you actually do today?", type: 'textarea', placeholder: "Even unplanned things..." },
+          { id: 'missed',label: "What didn't get done?",           type: 'text',     placeholder: 'The thing(s) that slipped...' },
+          { id: 'feel',  label: 'How do you feel about the day?',  type: 'select',   options: ['Good — better than expected', 'Okay — about right', 'Frustrated — below expectations', 'Wasted — nothing went right'] }
+        ],
+        build: f => `Help me close out my day. I have ADHD and I tend to either dismiss what I did or spiral about what I didn't.\n\nWhat I did: ${f.did}\nWhat didn't happen: ${f.missed}\nHow I feel: ${f.feel}\n\nOne honest observation about today, what to carry into tomorrow, and one thing to acknowledge — even if the day felt like a failure.`
+      },
+      // ── Executive Function ──
+      {
+        label: "🧩 I keep getting distracted — help me refocus",
+        fields: [
+          { id: 'working',     label: "What should you be working on?", type: 'text',   placeholder: 'The task or project...' },
+          { id: 'distraction', label: "What keeps pulling you away?",   type: 'text',   placeholder: 'e.g. Phone, thoughts, other tasks...' },
+          { id: 'time',        label: "How long do you need to focus?", type: 'select', options: ['15 minutes', '30 minutes', '45 minutes', '1 hour', 'More than 1 hour'] }
+        ],
+        build: f => `I keep getting distracted. I have ADHD.\n\nTask: ${f.working}\nWhat pulls me away: ${f.distraction}\nFocus needed: ${f.time}\n\nOne environment tweak I can do in 2 minutes, a technique to get back on task when I drift, and how to handle ${f.time} without white-knuckling it.`
+      },
+      {
+        label: "🧩 I'm in a shame spiral about something I haven't done",
+        fields: [
+          { id: 'task',  label: "What haven't you done?",              type: 'text', placeholder: 'The thing that keeps haunting you...' },
+          { id: 'since', label: "How long has it been sitting there?", type: 'text', placeholder: 'e.g. 3 days, 2 weeks, months...' },
+          { id: 'why',   label: "What happens if it stays undone?",    type: 'text', placeholder: 'Real consequences, if any...' }
+        ],
+        build: f => `I'm stuck in a shame spiral. I have ADHD and this pattern is exhausting.\n\nTask: ${f.task}\nHow long: ${f.since}\nConsequences: ${f.why || 'None stated'}\n\nWhy ADHD makes this spiral so sticky, a realistic reframe (not toxic positivity), and the single smallest action to break the cycle today — under 5 minutes.`
+      },
+      {
+        label: "🧩 Help me deal with rejection sensitive dysphoria (RSD)",
+        fields: [
+          { id: 'situation', label: "What happened?",         type: 'textarea', placeholder: 'What triggered the RSD...' },
+          { id: 'feeling',   label: "What are you feeling?",  type: 'text',     placeholder: 'e.g. Crushed, angry, worthless...' }
+        ],
+        build: f => `I'm experiencing rejection sensitive dysphoria (RSD). I have ADHD.\n\nWhat happened: ${f.situation}\nFeeling: ${f.feeling}\n\nWhat RSD is neurologically (briefly), why this reaction feels disproportionate but isn't my fault, and 2–3 grounding techniques specifically for RSD.`
+      },
+      {
+        label: "🧩 I can't hold onto information — working memory help",
+        fields: [
+          { id: 'situation', label: "What are you trying to keep track of?", type: 'textarea', placeholder: 'Instructions, steps, what someone told me...' }
+        ],
+        build: f => `I'm struggling with working memory. I have ADHD.\n\n${f.situation}\n\nA simple external system for this specific situation, one immediate trick to capture it before it's gone, and how to set up a retrieval cue so I actually find it later.`
+      },
+      {
+        label: "🧩 Help me get through a task I really don't want to do",
+        fields: [
+          { id: 'task',  label: "What's the task?",                   type: 'text',   placeholder: 'The thing you dread...' },
+          { id: 'why',   label: "Why do you dread it?",               type: 'select', options: ["It's boring", 'It feels overwhelming', "I don't know where to start", 'I might fail or do it wrong', "It's emotionally difficult"] },
+          { id: 'stake', label: "What happens if you don't do it?",   type: 'text',   placeholder: 'Real consequence, if any...' }
+        ],
+        build: f => `I need to get through a task I dread. I have ADHD — low-interest tasks are genuinely harder for my brain.\n\nTask: ${f.task}\nWhy I dread it: ${f.why}\nConsequence of skipping: ${f.stake || 'None stated'}\n\nWhy this is hard for ADHD brains, one dopamine hack to make it tolerable, and a time-based plan to get through it in small chunks.`
+      }
+    ]
+  },
+  tasks: {
+    icon: '✅', title: 'Task Help',
+    templates: [
+      {
+        label: 'Break a task into micro-steps',
+        fields: [
+          { id: 'task',   label: 'What is the task?',      type: 'text',
+            placeholder: 'e.g. Write the quarterly report' },
+          { id: 'energy', label: 'Energy level right now', type: 'select',
+            options: ['🔋 High — sharp and ready', '⚡ Medium — functional', '😴 Low — running on fumes'] }
+        ],
+        build: f => `Break this task into micro-steps for someone with ADHD.\n\nTask: ${f.task}\nEnergy: ${f.energy}\n\n5–8 steps, each under 10 minutes. So small it's impossible to say no to. Specific physical actions only.`
+      },
+      {
+        label: 'Help me pick ONE task to start',
+        fields: [
+          { id: 'tasks',  label: 'Your options (one per line)', type: 'textarea', placeholder: 'Task 1\nTask 2\nTask 3...' },
+          { id: 'energy', label: 'Energy level',               type: 'select',   options: ['🔋 High', '⚡ Medium', '😴 Low'] },
+          { id: 'time',   label: 'Time available',             type: 'select',   options: ['Under 15 min', '15–30 min', '30–60 min', 'Over an hour'] }
+        ],
+        build: f => `I have ADHD and decision paralysis is real. Help me pick ONE task.\n\nOptions:\n${f.tasks}\n\nEnergy: ${f.energy}\nTime: ${f.time}\n\nGive me the answer — not a framework. Then the first action.`
+      },
+      {
+        label: "I'm avoiding a task — help me start",
+        fields: [
+          { id: 'task', label: "What are you avoiding?", type: 'text', placeholder: 'e.g. Responding to that email' },
+          { id: 'why',  label: "Why? (optional)",        type: 'text', placeholder: 'e.g. Feels overwhelming, boring...' }
+        ],
+        build: f => `I'm procrastinating. I have ADHD.\n\nTask: ${f.task}\n${f.why ? `Why: ${f.why}` : ''}\n\n(1) Realistic take on why I'm stuck, (2) one trick to start in 2 minutes, (3) single first physical action right now.`
+      },
+      {
+        label: 'Match my tasks to my energy level',
+        fields: [
+          { id: 'tasks',  label: 'Your task list for today', type: 'textarea', placeholder: 'List your tasks...' },
+          { id: 'energy', label: 'Energy level right now',   type: 'select',   options: ['🔋 High — sharp and ready', '⚡ Medium — functional', '😴 Low — running on fumes'] },
+          { id: 'blocks', label: 'Time blocks available (optional)', type: 'text', placeholder: 'e.g. 9–11am free, 2–3pm free' }
+        ],
+        build: f => `Help me match my tasks to my energy level. I have ADHD — fighting my energy always fails.\n\nTasks:\n${f.tasks}\n\nCurrent energy: ${f.energy}\n${f.blocks ? `Available time: ${f.blocks}` : ''}\n\nSort my tasks by which ones fit my current energy. High-energy tasks need focus and creativity. Low-energy tasks are admin, routine, or physical. Tell me exactly what to do first given where I'm at right now.`
+      },
+      {
+        label: "I have too many urgent tasks — help me cut it down",
+        fields: [
+          { id: 'tasks',    label: 'Everything marked urgent',     type: 'textarea', placeholder: 'List them all...' },
+          { id: 'deadline', label: 'Any hard deadlines today?',    type: 'text',     placeholder: 'e.g. 3pm meeting, EOD email' }
+        ],
+        build: f => `Everything feels urgent. I have ADHD and this is paralyzing me.\n\nAll my "urgent" tasks:\n${f.tasks}\n\nHard deadlines today: ${f.deadline || 'None stated'}\n\nBe ruthless. What is actually urgent (consequences if not done today)? What is fake urgent (feels urgent but can wait)? Give me a clear cut list: do today vs. reschedule.`
+      }
+    ]
+  },
+  planning: {
+    icon: '📅', title: 'Daily Planning',
+    templates: [
+      {
+        label: 'Help me plan my day',
+        fields: [
+          { id: 'tasks',     label: "What needs to happen today?",        type: 'textarea', placeholder: 'Tasks, meetings, commitments...' },
+          { id: 'energy',    label: 'Energy level this morning',          type: 'select',   options: ['🔋 High', '⚡ Medium', '😴 Low'] },
+          { id: 'available', label: 'Hours realistically available',      type: 'select',   options: ['1–2 hours', '3–4 hours', '5–6 hours', 'Full day'] }
+        ],
+        build: f => `Help me plan my day. I have ADHD and I consistently overestimate what I can do.\n\nWhat needs to happen:\n${f.tasks}\n\nEnergy: ${f.energy}\nRealistic hours available: ${f.available}\n\nGive me: a realistic plan for today (not everything — just what actually fits), a suggested order based on my energy, and one thing to protect no matter what else falls apart.`
+      },
+      {
+        label: 'Help me time-block my day',
+        fields: [
+          { id: 'tasks',  label: 'Tasks to schedule',         type: 'textarea', placeholder: 'List tasks with rough time estimates if you know them...' },
+          { id: 'hours',  label: 'Your available hours today', type: 'text',     placeholder: 'e.g. 9am–12pm, 2pm–5pm' },
+          { id: 'energy', label: 'When is your peak energy?',  type: 'select',   options: ['Morning (before noon)', 'Midday (noon–2pm)', 'Afternoon (2–5pm)', 'Evening (after 5pm)', 'No clear pattern'] }
+        ],
+        build: f => `Help me time-block my day. I have ADHD — I need structure but not so rigid it breaks the moment one thing shifts.\n\nTasks to schedule:\n${f.tasks}\n\nAvailable hours: ${f.hours}\nPeak energy: ${f.energy}\n\nGive me a time-block schedule that: puts hard cognitive tasks during peak energy, groups similar tasks together, includes at least one buffer block, and has a clear stopping point.`
+      },
+      {
+        label: 'My day went sideways — help me reset',
+        fields: [
+          { id: 'plan',    label: 'What was your plan for today?',   type: 'textarea', placeholder: 'What you intended to do...' },
+          { id: 'reality', label: "What actually happened?",         type: 'textarea', placeholder: 'Interruptions, rabbit holes, nothing got done...' },
+          { id: 'left',    label: 'Hours left in your day',          type: 'select',   options: ['Less than 1 hour', '1–2 hours', '2–3 hours', 'More than 3 hours'] }
+        ],
+        build: f => `My day went sideways and I need to reset. I have ADHD.\n\nPlan: ${f.plan}\nWhat happened: ${f.reality}\nHours left: ${f.left}\n\nDon't lecture me about what went wrong. Tell me: given what's left of today, what 1–2 things can I still realistically do, and what's the single most useful thing to do in the next 30 minutes.`
+      },
+      {
+        label: 'End of day reflection',
+        fields: [
+          { id: 'did',    label: "What did you actually do today?",       type: 'textarea', placeholder: "Even things that weren't planned..." },
+          { id: 'missed', label: "What didn't get done?",                 type: 'text',     placeholder: 'The thing(s) that slipped...' },
+          { id: 'feel',   label: 'How do you feel about the day?',        type: 'select',   options: ['Good — better than expected', 'Okay — about right', 'Frustrated — below expectations', 'Wasted — nothing went right'] }
+        ],
+        build: f => `Help me close out my day. I have ADHD and I tend to either dismiss what I did or spiral about what I didn't.\n\nWhat I did: ${f.did}\nWhat didn't get done: ${f.missed}\nHow I feel: ${f.feel}\n\nGive me: one honest observation about today (not harsh, not sugarcoated), what to carry into tomorrow, and one thing to acknowledge — even if the day felt like a failure.`
+      }
+    ]
+  },
 
-What's happening: ${f.situation}
-Physical state: ${f.state}
-Time I have: ${f.time}
-
-Do two things:
-1. Tell me one thing I can do RIGHT NOW to lower my nervous system activation — not productivity advice, just calm.
-2. Once I'm calmer, give me one tiny task to start moving again.
-
-Don't optimize me. Just help me through the next 10 minutes.`
+  ef: {
+    icon: '🧩', title: 'Executive Function',
+    templates: [
+      {
+        label: "I keep getting distracted — help me refocus",
+        fields: [
+          { id: 'working',     label: "What are you supposed to be working on?", type: 'text',     placeholder: 'The task or project...' },
+          { id: 'distraction', label: "What keeps pulling you away?",            type: 'text',     placeholder: 'e.g. Phone, thoughts, other tasks...' },
+          { id: 'time',        label: "How long do you need to focus?",           type: 'select',   options: ['15 minutes', '30 minutes', '45 minutes', '1 hour', 'More than 1 hour'] }
+        ],
+        build: f => `I keep getting distracted and can't stay on task. I have ADHD.\n\nTask: ${f.working}\nWhat pulls me away: ${f.distraction}\nFocus time needed: ${f.time}\n\nGive me: one environment tweak I can do in the next 2 minutes, a specific technique to get back on task when I drift, and how to handle the ${f.time} without white-knuckling it.`
+      },
+      {
+        label: "I'm in a shame spiral about something I haven't done",
+        fields: [
+          { id: 'task',   label: "What haven't you done?",              type: 'text', placeholder: 'The thing that keeps haunting you...' },
+          { id: 'since',  label: "How long has it been sitting there?", type: 'text', placeholder: 'e.g. 3 days, 2 weeks, months...' },
+          { id: 'why',    label: "What happens if it stays undone?",    type: 'text', placeholder: 'Real consequences, if any...' }
+        ],
+        build: f => `I'm stuck in a shame spiral about something I haven't done. I have ADHD and this pattern is exhausting.\n\nTask: ${f.task}\nHow long it's been: ${f.since}\nConsequences: ${f.why || 'Unclear'}\n\nDon't tell me to "just do it." Give me: why ADHD makes this spiral so common and so sticky, a realistic reframe (not toxic positivity), and the single smallest action to break the cycle today — something I can do in under 5 minutes.`
+      },
+      {
+        label: "Help me deal with rejection sensitive dysphoria (RSD)",
+        fields: [
+          { id: 'situation', label: "What happened?",               type: 'textarea', placeholder: 'What triggered the RSD...' },
+          { id: 'feeling',   label: "What are you feeling?",        type: 'text',     placeholder: 'e.g. Crushed, angry, worthless, panicked...' }
+        ],
+        build: f => `I'm experiencing rejection sensitive dysphoria (RSD). I have ADHD and this hits me extremely hard.\n\nWhat happened: ${f.situation}\nWhat I'm feeling: ${f.feeling}\n\nHelp me understand: what RSD actually is neurologically (briefly), why this reaction feels so disproportionate but isn't my fault, and 2–3 grounding techniques specifically for RSD — not generic anxiety advice.`
+      },
+      {
+        label: "I can't hold onto information — working memory help",
+        fields: [
+          { id: 'situation', label: "What are you trying to keep track of?", type: 'textarea', placeholder: 'e.g. Instructions, multiple steps, what someone told me...' }
+        ],
+        build: f => `I'm struggling with working memory. I have ADHD and information just falls out of my head.\n\nWhat I'm trying to track:\n${f.situation}\n\nGive me: a simple external system for this specific situation (not generic "write it down"), one immediate trick to capture it right now before it's gone, and how to set up a retrieval cue so I actually find it later.`
+      },
+      {
+        label: "Help me get through a task I really don't want to do",
+        fields: [
+          { id: 'task',  label: "What's the task?",         type: 'text',   placeholder: 'The thing you dread...' },
+          { id: 'why',   label: "Why do you dread it?",     type: 'select', options: ['It\'s boring', 'It feels overwhelming', 'I don\'t know where to start', 'I might fail or do it wrong', 'It\'s emotionally difficult', 'Other'] },
+          { id: 'stake', label: "What happens if you don't do it?", type: 'text', placeholder: 'Real consequence, if any...' }
+        ],
+        build: f => `I need to get through a task I really don't want to do. I have ADHD — low-interest tasks are genuinely harder for my brain, not just laziness.\n\nTask: ${f.task}\nWhy I dread it: ${f.why}\nConsequence of not doing it: ${f.stake || 'None stated'}\n\nGive me: why this is specifically hard for ADHD brains (briefly), one dopamine hack to make it more tolerable, and a time-based plan to get through it in the smallest possible chunks.`
       }
     ]
   },
 
   braindump: {
-    title: '🧠 Brain Dump', subtitle: 'Capture everything. Sort it fast.',
-    prompts: [
-      { id:'sort', label:'Sort My Brain Dump',
-        fields:[
-          { id:'dump', label:'Everything I captured', type:'textarea', ph:'Paste your brain dump — tasks, ideas, worries, random thoughts, half-formed plans...' }
+    icon: '🧠', title: 'Brain Dump Help',
+    templates: [
+      {
+        label: 'Sort and route my brain dump',
+        fields: [
+          { id: 'dump', label: 'Paste your brain dump', type: 'textarea',
+            placeholder: 'Everything on your mind — tasks, ideas, worries...' }
         ],
-        build: f=>`I have ADHD and my brain dump is full. Help me sort it.
-
-Here is everything I captured:
-${f.dump}
-
-Sort each item into exactly one bucket:
-- ✅ TASK — something I need to do
-- 💡 IDEA — worth keeping, not actionable yet
-- 📚 REFERENCE — useful info to save somewhere
-- 🗑 DELETE — not worth my time or energy
-
-For each TASK: add priority (urgent / high / normal / low) and time estimate (5min / 15min / 30min / 1hr / 2+hrs).
-Be direct. No fluff.`
-      }
-    ]
-  },
-
-  tasks: {
-    title: '✅ Task Manager', subtitle: 'Break it down or just pick one.',
-    prompts: [
-      { id:'microsteps', label:'Break Into Micro-Steps',
-        fields:[
-          { id:'task',     label:"The task I'm stuck on",    type:'text',     ph:'e.g. Write the project proposal' },
-          { id:'why',      label:"Why I think I'm stuck",    type:'select',   opts:['Too big','Boring',"Don't know where to start",'Afraid of failing','Perfectionism','Unclear outcome'] },
-          { id:'tried',    label:"What I've already tried",  type:'text',     ph:'Or "haven\'t started yet"' },
-          { id:'energy',   label:'Current energy',           type:'select',   opts:['High','Medium','Low','Completely crashed'] },
-          { id:'location', label:'Where I am right now',     type:'select',   opts:['At my desk','On my phone','Noisy place','Other'] }
-        ],
-        build: f=>`I have ADHD and I'm stuck on: ${f.task}
-Why I'm stuck: ${f.why}
-What I've tried: ${f.tried}
-Current energy: ${f.energy}
-Where I am: ${f.location}
-
-Break this into micro-steps I can start right now.
-- Each step ≤5 minutes
-- First step must be embarrassingly small
-- No vague steps — "open browser and search X" not "research X"
-- Max 7 steps, matched to my energy level
-- Tell me exactly how to start in the next 60 seconds
-
-Tone: Blunt friend. No affirmations. Just tell me what to do.`
+        build: f => `Sort my brain dump. I have ADHD.\n\n${f.dump}\n\nCategorize each item:\n✅ Task\n💡 Idea\n📚 Reference\n🗑 Delete\n\nThen flag the top 3 to act on this week.`
       },
-      { id:'pickone', label:'Pick One Task',
-        fields:[
-          { id:'tasks',    label:'All my tasks right now',            type:'textarea', ph:'List them all, even the impossible ones...' },
-          { id:'energy',   label:'Energy',                            type:'select',   opts:['High','Medium','Low'] },
-          { id:'time',     label:'Time I have',                       type:'text',     ph:'e.g. 20 minutes' },
-          { id:'avoiding', label:"Type of task I'm most avoiding",    type:'select',   opts:['Creative','Admin','Communication','Physical','Thinking-heavy'] },
-          { id:'fear',     label:'Biggest fear about picking wrong',   type:'select',   opts:['Wasting time','Getting interrupted','Doing it badly','Other'] }
+      {
+        label: 'Help me prioritize my list',
+        fields: [
+          { id: 'items',   label: 'Your task list',            type: 'textarea', placeholder: 'Paste your tasks...' },
+          { id: 'context', label: 'Any deadlines or context?', type: 'text',     placeholder: 'e.g. Work deadline Friday' }
         ],
-        build: f=>`I have ADHD and I'm overwhelmed. I can't pick what to do.
-My tasks: ${f.tasks}
-Energy: ${f.energy} | Time: ${f.time}
-Most avoiding: ${f.avoiding}
-Biggest fear: ${f.fear}
-
-Pick ONE task. Don't give me options — pick one and defend it.
-Give me the exact first physical action.
-Tell me what to do with the others so my brain stops pulling toward them.
-Give a smaller fallback if I freeze on the one you picked.
-
-Be direct. I don't need encouragement — I need to know what to do.`
+        build: f => `Help me prioritize. I have ADHD — everything feels equally urgent.\n\nTasks:\n${f.items}\n\nContext: ${f.context || 'None'}\n\nTop 3 for today, next 3 for later this week, rest deprioritized.`
       }
     ]
   },
-
-  planner: {
-    title: '📅 Daily Planner', subtitle: 'Build a realistic day before it gets away from you.',
-    prompts: [
-      { id:'timeblocks', label:'Build My Day',
-        fields:[
-          { id:'energy',        label:'My energy right now',          type:'select',   opts:['High','Medium','Low'] },
-          { id:'peak',          label:'My actual peak focus window',   type:'select',   opts:['Morning','Late morning','Afternoon','Evening'] },
-          { id:'hours',         label:'Hours available today',         type:'text',     ph:'e.g. 4 hours' },
-          { id:'mustdo',        label:'Must-do tasks',                 type:'textarea', ph:'Non-negotiables — list them...' },
-          { id:'optional',      label:'Optional tasks',                type:'textarea', ph:'Nice-to-haves if time allows...' },
-          { id:'interruptions', label:"Interruptions I'll face today", type:'text',     ph:'e.g. kids, meetings, phone calls' },
-          { id:'timetrap',      label:'My ADHD time trap',             type:'select',   opts:['Underestimate how long things take','Hyperfocus past other tasks','Lose time in transitions','Other'] }
-        ],
-        build: f=>`I have ADHD and need help planning my day.
-
-Energy: ${f.energy} | Peak focus window: ${f.peak} | Hours available: ${f.hours}
-Must-do tasks: ${f.mustdo}
-Optional tasks: ${f.optional}
-Interruptions today: ${f.interruptions}
-My ADHD time trap: ${f.timetrap}
-
-Build me a realistic time-blocked schedule.
-- No block longer than 90 minutes
-- Schedule hardest task in my actual peak window — not an ideal one
-- At least 2 breaks — tell me what to do in them
-- Build in the interruptions. Don't pretend they won't happen.
-- 20% buffer time — ADHD always needs it
-- Flag the one block most likely to collapse and tell me the fallback
-
-Short sentences. No bullet walls.`
-      }
-    ]
-  },
-
   habits: {
-    title: '🔄 Habit Tracker', subtitle: 'Build habits that actually stick.',
-    prompts: [
-      { id:'movement', label:'Build a Movement Habit',
-        fields:[
-          { id:'tried',    label:"What I've tried before",         type:'textarea', ph:'Describe previous attempts...' },
-          { id:'why',      label:'Why it fell apart',              type:'select',   opts:['Forgetfulness','No motivation','Too ambitious','Boring','No accountability'] },
-          { id:'anchors',  label:'My current daily anchor points', type:'text',     ph:'e.g. morning coffee, lunch break, after work' },
-          { id:'movement', label:'Movement I actually enjoy',      type:'text',     ph:'e.g. walk, dance, gym, bike, stretching' },
-          { id:'time',     label:'Realistic time I have',          type:'text',     ph:'e.g. 10 minutes' }
+    icon: '🔄', title: 'Habit Help',
+    templates: [
+      {
+        label: 'Help me build a new habit',
+        fields: [
+          { id: 'habit',   label: 'What habit do you want to build?', type: 'text', placeholder: 'e.g. Exercise, drink water' },
+          { id: 'tried',   label: "What have you tried before?",      type: 'text', placeholder: 'e.g. Apps, schedules, nothing' },
+          { id: 'barrier', label: "What usually stops you?",          type: 'text', placeholder: 'e.g. Forget, lose motivation' }
         ],
-        build: f=>`I have ADHD and I struggle to exercise consistently.
-
-What I've tried: ${f.tried}
-Why it fell apart: ${f.why}
-My daily anchors: ${f.anchors}
-Movement I enjoy: ${f.movement}
-Time I realistically have: ${f.time}
-
-Design an ADHD-friendly movement habit.
-- Start embarrassingly small (5 min minimum, not 30)
-- Attach to an existing anchor
-- Include a bad-day fallback (1-min version)
-- One accountability layer that works for ADHD — not willpower
-- Tell me exactly what to do today
-
-Bonus: the one ADHD-specific trap most likely to kill this habit and how to prevent it.
-Blunt and specific. Skip the motivational language.`
+        build: f => `Help me build a habit that sticks with an ADHD brain.\n\nHabit: ${f.habit}\nTried: ${f.tried || 'Nothing yet'}\nBarrier: ${f.barrier || 'Not sure'}\n\nMinimum viable version, habit stacking cue, one trick to remember it. Realistic for ADHD.`
       },
-      { id:'anyhabit', label:'Build Any Habit',
-        fields:[
-          { id:'habit',   label:'Habit I want to build',    type:'text', ph:'Describe the habit...' },
-          { id:'reason',  label:'Failed before because',    type:'text', ph:'Be honest — what went wrong...' },
-          { id:'anchors', label:'Anchor points in my day',  type:'text', ph:'e.g. morning coffee, lunch, bedtime' }
+      {
+        label: "I missed my habit — help me restart",
+        fields: [
+          { id: 'habit', label: 'Which habit?',                    type: 'text', placeholder: 'e.g. Daily exercise' },
+          { id: 'days',  label: 'How long since you last did it?', type: 'text', placeholder: 'e.g. 3 days, 2 weeks' }
         ],
-        build: f=>`I have ADHD and keep failing at habits.
-Habit I want: ${f.habit}
-Failed before because: ${f.reason}
-Anchor points in my day: ${f.anchors}
-
-Design an ADHD-friendly version with: habit stack, tiny trigger, 2-min fallback, exact day 1 action.
-Talk to me like a real person. No "Great goal!" Be direct. If what I've tried is wrong for an ADHD brain, say so.`
+        build: f => `I missed my habit. I have ADHD and breaks become permanent.\n\nHabit: ${f.habit}\nTime since: ${f.days}\n\nNo shame. Why this happens with ADHD, smallest restart today, how to make missing a day less catastrophic.`
+      },
+      {
+        label: "Why can't I stick to habits? Help me understand",
+        fields: [
+          { id: 'habit',   label: 'Which habit keeps failing?',      type: 'text', placeholder: 'e.g. Exercise, sleep schedule, medication' },
+          { id: 'pattern', label: 'What usually happens?',           type: 'textarea', placeholder: 'e.g. Do it 3 days then stop, forget after a good start, all-or-nothing...' }
+        ],
+        build: f => `I keep failing at this habit and I want to understand why, not just get another tip.\n\nHabit: ${f.habit}\nPattern: ${f.pattern}\n\nExplain the ADHD-specific reasons this particular pattern happens — neurologically, not motivationally. Then suggest one structural change (not a willpower change) that addresses the actual root cause.`
+      },
+      {
+        label: 'Design a minimal habit stack for me',
+        fields: [
+          { id: 'goals',   label: 'What habits do you want to build?', type: 'textarea', placeholder: 'List everything you wish you did regularly...' },
+          { id: 'anchor',  label: 'One thing you already do every day without fail', type: 'text', placeholder: 'e.g. Morning coffee, brush teeth, lunch break' },
+          { id: 'time',    label: 'Max minutes you can realistically give daily',    type: 'select', options: ['5 minutes', '10 minutes', '15 minutes', '20–30 minutes'] }
+        ],
+        build: f => `Help me design a minimal habit stack that works with an ADHD brain.\n\nHabits I want:\n${f.goals}\n\nAnchor habit (already consistent): ${f.anchor}\nMax time daily: ${f.time}\n\nPick the 2–3 most impactful habits from my list, attach them to my anchor, and give me a specific sequence. Keep it under my time limit. Warn me if I'm trying to do too much.`
       }
     ]
   },
-
   weekly: {
-    title: '📊 Weekly Review', subtitle: 'Close the week. Set up the next one.',
-    prompts: [
-      { id:'wins', label:'Weekly Wins Summary',
-        fields:[
-          { id:'highlights', label:'What I did this week', type:'textarea', ph:'Wins, tasks done, highlights — rough notes are fine...' }
+    icon: '📊', title: 'Weekly Review Help',
+    templates: [
+      {
+        label: 'Summarize my week and find the wins',
+        fields: [
+          { id: 'done',   label: "What got done this week?", type: 'textarea', placeholder: 'Even small things count...' },
+          { id: 'missed', label: "What didn't happen?",      type: 'textarea', placeholder: 'Tasks, intentions, goals...' }
         ],
-        build: f=>`I have ADHD and just finished my weekly review.
-
-Here is what I did this week:
-${f.highlights}
-
-Write me:
-1. A 3-sentence summary of what I accomplished — make it sound good, I need the dopamine hit
-2. The top 3 patterns you notice (good habits, recurring blockers, energy themes)
-3. One specific suggestion for next week based on what you see
-
-Direct, warm, brief. Sound like a real person, not a wellness app.`
+        build: f => `Review my week with an ADHD lens.\n\nGot done:\n${f.done}\n\nDidn't happen:\n${f.missed}\n\n(1) Real wins including things I might dismiss, (2) one honest observation about what got in the way, (3) one adjustment for next week.`
       },
-      { id:'nextweek', label:'Plan Next Week',
-        fields:[
-          { id:'projects',  label:'Active projects',        type:'textarea', ph:'List them...' },
-          { id:'deadlines', label:'Upcoming deadlines',     type:'text',     ph:'e.g. Report due Friday, Call Tuesday 2pm' },
-          { id:'forecast',  label:'Energy forecast',        type:'text',     ph:'Heavy days, appointments, known low-energy periods...' }
+      {
+        label: "Plan next week's Top 3",
+        fields: [
+          { id: 'projects', label: 'Active projects and responsibilities', type: 'textarea', placeholder: 'List what you have going on...' },
+          { id: 'energy',   label: 'Expected energy this week',           type: 'select',   options: ['High energy week', 'Normal week', 'Low energy / rough week'] }
         ],
-        build: f=>`I have ADHD and I'm planning next week.
-Projects: ${f.projects}
-Deadlines: ${f.deadlines}
-Energy forecast: ${f.forecast}
-
-Help me:
-1. Pick my Top 3 focus areas for the week
-2. Assign each focus to a day or time window
-3. Identify what I should NOT put on my list — protect my bandwidth
-
-Talk like a no-nonsense colleague. Tell me what to cut without softening it.`
+        build: f => `Help me pick my Top 3 focus areas for next week. I have ADHD.\n\nActive:\n${f.projects}\n\nExpected energy: ${f.energy}\n\nExactly 3 focus themes that make next week a win. One concrete first action for each.`
+      },
+      {
+        label: "I keep having the same bad week — help me break the pattern",
+        fields: [
+          { id: 'pattern', label: "What keeps happening?",           type: 'textarea', placeholder: 'e.g. I start strong Monday then fall apart, I never finish what I start, weekends undo everything...' },
+          { id: 'tried',   label: "What have you already tried?",    type: 'text',     placeholder: 'e.g. Stricter schedule, accountability partner, nothing...' }
+        ],
+        build: f => `I keep repeating the same unproductive pattern week after week. I have ADHD.\n\nPattern: ${f.pattern}\nWhat I've tried: ${f.tried || 'Nothing yet'}\n\nDon't give me generic productivity advice. Identify the specific ADHD mechanism driving this pattern (dopamine crash, task initiation, working memory, etc.) and suggest one structural intervention — not a habit or motivation fix — that addresses the root cause.`
+      },
+      {
+        label: "Help me do a quick monthly reset",
+        fields: [
+          { id: 'month',  label: "What month/period are you reviewing?",   type: 'text',     placeholder: 'e.g. May, last 4 weeks' },
+          { id: 'wins',   label: "Biggest win this month",                 type: 'text',     placeholder: 'Even one small thing...' },
+          { id: 'stuck',  label: "What's been stuck or stalling?",         type: 'textarea', placeholder: 'Projects, habits, goals that haven\'t moved...' },
+          { id: 'focus',  label: "What do you most want to change next month?", type: 'text', placeholder: 'One honest answer...' }
+        ],
+        build: f => `Help me do a monthly reset. I have ADHD and monthly reviews help me zoom out past the day-to-day noise.\n\nMonth: ${f.month}\nBiggest win: ${f.wins}\nWhat's been stuck: ${f.stuck}\nWhat I want to change: ${f.focus}\n\nGive me: one honest pattern you see, one thing to stop doing next month, one thing to protect and keep doing, and a single focus theme for next month.`
       }
     ]
   },
-
   projects: {
-    title: '🚀 Project Hub', subtitle: 'Turn goals into plans. Get unstuck.',
-    prompts: [
-      { id:'goalplan', label:'Turn a Goal Into a Plan',
-        fields:[
-          { id:'goal',      label:'My goal',                          type:'textarea', ph:'Describe it clearly...' },
-          { id:'deadline',  label:'Deadline',                         type:'text',     ph:'Date, or "no deadline"' },
-          { id:'resources', label:'Resources I have',                 type:'text',     ph:'e.g. 5 hrs/week, laptop, $0 budget' },
-          { id:'fear',      label:'Biggest fear about this project',  type:'text',     ph:"What's most likely to derail me..." }
+    icon: '🚀', title: 'Project Help',
+    templates: [
+      {
+        label: 'Turn a goal into an action plan',
+        fields: [
+          { id: 'goal',        label: 'What is the goal?',    type: 'text', placeholder: 'e.g. Launch my Gumroad product' },
+          { id: 'deadline',    label: 'Deadline or timeframe', type: 'text', placeholder: 'e.g. End of June' },
+          { id: 'constraints', label: 'Any constraints?',      type: 'text', placeholder: 'e.g. 1 hour/day' }
         ],
-        build: f=>`I have ADHD and I need to break down a big goal.
-
-Goal: ${f.goal}
-Deadline: ${f.deadline}
-Resources: ${f.resources}
-Biggest fear: ${f.fear}
-
-Give me:
-1. The 5–7 major milestones in order
-2. The very first physical action I can take in the next 24 hours
-3. The most common ADHD trap for this type of project and how to avoid it
-
-Be specific. No generic advice.`
+        build: f => `Turn this goal into an action plan for someone with ADHD.\n\nGoal: ${f.goal}\nDeadline: ${f.deadline || 'None'}\nConstraints: ${f.constraints || 'None'}\n\nUp to 4 phases, next 3 actions I can start today, single biggest risk. Practical, not motivational.`
       },
-      { id:'unstuck', label:"Stuck on a Project",
-        fields:[
-          { id:'project', label:'Project name + description', type:'text',   ph:'e.g. Website redesign for client' },
-          { id:'lastdid', label:'Last thing I did',           type:'text',   ph:'Where you left off...' },
-          { id:'blocker', label:"What's blocking me",         type:'select', opts:['Fear','Boredom','Overwhelm','Unclear next step'] }
+      {
+        label: "I'm stuck on a project",
+        fields: [
+          { id: 'project', label: 'What is the project?', type: 'text',     placeholder: 'e.g. Redesigning my website' },
+          { id: 'stuck',   label: "Where are you stuck?", type: 'textarea', placeholder: "What's blocking you..." }
         ],
-        build: f=>`I have ADHD and I'm completely stuck on: ${f.project}
-
-Last thing I did: ${f.lastdid}
-What's blocking me: ${f.blocker}
-
-Give me:
-1. The ONE next action (under 5 minutes) to get unstuck right now
-2. Why I'm probably stuck — ADHD-specific diagnosis
-3. A reframe that makes this feel less heavy
-
-Don't lecture me. Just help me move.`
+        build: f => `I'm stuck on a project. I have ADHD.\n\nProject: ${f.project}\nStuck: ${f.stuck}\n\nWhat's blocking me (be honest), one workaround, smallest possible next action in 30 minutes.`
       }
     ]
   },
-
   toolbox: {
-    title: '🧰 ADHD Toolbox', subtitle: 'Tools for the hard moments.',
-    prompts: [
-      { id:'overwhelmed', label:"I'm Overwhelmed",
-        fields:[
-          { id:'situation', label:"What's happening",  type:'textarea', ph:"2–3 sentences. Don't overthink it." },
-          { id:'state',     label:'Physical state',    type:'select',   opts:['Tired','Wired','Anxious','Numb'] },
-          { id:'time',      label:'Time I have',       type:'text',     ph:'e.g. 10 minutes' }
+    icon: '🧰', title: 'ADHD Toolbox',
+    templates: [
+      {
+        label: "I'm overwhelmed right now",
+        fields: [
+          { id: 'situation', label: "What's happening?", type: 'textarea', placeholder: "What feels overwhelming..." }
         ],
-        build: f=>`I have ADHD and I'm overwhelmed right now. I can't think straight.
-
-What's happening: ${f.situation}
-Physical state: ${f.state}
-Time I have: ${f.time}
-
-1. Tell me one thing I can do RIGHT NOW to lower my nervous system activation — not productivity, just calm.
-2. Once I'm calmer, give me one tiny task to start moving again.
-
-Don't optimize me. Get me through the next 10 minutes.`
+        build: f => `I'm overwhelmed. I have ADHD.\n\nSituation: ${f.situation}\n\nOne thing to do in 5 minutes to reduce overwhelm, one thing to completely ignore, one grounding thought. Brief and direct.`
       },
-      { id:'cantstart', label:"I Can't Start",
-        fields:[
-          { id:'task',     label:'Task I cannot start',         type:'text',   ph:'Be specific...' },
-          { id:'time',     label:"I've been avoiding it for",   type:'text',   ph:'e.g. 3 days, 2 weeks' },
-          { id:'reason',   label:"Real reason I'm stuck",       type:'select', opts:['Fear','Boredom','Overwhelm','Unclear first step','Perfectionism'] },
-          { id:'location', label:'Where I am right now',        type:'select', opts:['At my desk','On my couch','Phone only','Other'] }
+      {
+        label: "I can't start anything",
+        fields: [
+          { id: 'should', label: "What should you be working on?", type: 'text', placeholder: "The thing you know you need to do..." }
         ],
-        build: f=>`I have ADHD and I cannot make myself start: ${f.task}
-Avoiding it for: ${f.time}
-Real reason: ${f.reason}
-Where I am: ${f.location}
-
-Give me:
-1. The single smallest first action (under 2 minutes) — matched to where I am right now
-2. A reframe for why starting matters that isn't toxic positivity
-3. One ADHD trap I'll hit in the first 5 minutes and exactly how to sidestep it
-
-Don't validate me. Short. Human. Direct.`
+        build: f => `I have ADHD and I'm completely frozen.\n\nShould be doing: ${f.should}\n\nNot "just start." Why this happens neurologically (briefly), 2-minute trick to get momentum, tiniest possible first action — so small it's almost embarrassing.`
       },
-      { id:'emotional', label:'Emotional Regulation',
-        fields:[
-          { id:'emotion',  label:"I'm feeling",      type:'select',   opts:['Frustrated','Overwhelmed','Anxious','Bored','Ashamed','Shut down'] },
-          { id:'trigger',  label:'What happened',    type:'textarea', ph:"Brief — don't overthink it..." }
+      {
+        label: 'Emotional regulation check-in',
+        fields: [
+          { id: 'feeling',   label: "What are you feeling?", type: 'select', options: ['Frustrated','Overwhelmed','Anxious','Angry','Sad','Ashamed','Bored','Shut down'] },
+          { id: 'situation', label: "What triggered it?",    type: 'text',   placeholder: 'Brief description...' }
         ],
-        build: f=>`I have ADHD and I'm flooded right now — ${f.emotion}.
-What happened: ${f.trigger}
-
-I don't need to be fixed. Give me:
-1. One grounding action for the next 5 minutes
-2. One sentence that reframes this without toxic positivity
-3. When I'm ready — one small task that gives me a sense of control back
-
-Talk like a friend who gets it. Short, human, direct. No toxic positivity.`
-      }
-    ]
-  },
-
-  prompts: {
-    title: '💡 AI Prompt Library', subtitle: 'Every prompt in one place.',
-    prompts: [
-      { id:'top3', label:'Pick My Top 3',
-        fields:[
-          { id:'tasks',  label:'Everything on my plate',  type:'textarea', ph:'Paste your task list or brain dump...' },
-          { id:'energy', label:'Energy level',            type:'select',   opts:['High','Medium','Low'] }
-        ],
-        build: f=>`I have ADHD and need help picking my Top 3 priorities for today.
-Everything on my plate: ${f.tasks}
-Energy: ${f.energy}
-
-Give me exactly 3 tasks ranked in order. For each: WHY it made the cut. Brief and direct.
-No preamble. Just the 3 tasks and the reasons.`
+        build: f => `Emotional regulation help. I have ADHD.\n\nFeeling: ${f.feeling}\nTriggered by: ${f.situation}\n\nWhy ADHD makes this more intense, one physical action in 5 minutes to regulate, one honest reframe — not toxic positivity.`
       },
-      { id:'sort', label:'Sort Brain Dump',
-        fields:[
-          { id:'dump', label:'Everything I captured', type:'textarea', ph:'Paste your brain dump...' }
+      {
+        label: "Help me set up a body doubling session",
+        fields: [
+          { id: 'task',     label: "What do you need to work on?",        type: 'text',   placeholder: 'Task or project...' },
+          { id: 'duration', label: "How long do you want to work?",       type: 'select', options: ['25 minutes', '30 minutes', '45 minutes', '1 hour', '90 minutes'] },
+          { id: 'option',   label: "Body doubling option available",      type: 'select', options: ['Focusmate (virtual co-working)', 'StudyStream (live rooms)', 'A friend/colleague on video', 'Going to a café or library', 'Not sure yet'] }
         ],
-        build: f=>`I have ADHD and my brain dump is full.
-
-${f.dump}
-
-Sort each item: ✅ TASK | 💡 IDEA | 📚 REFERENCE | 🗑 DELETE
-For each TASK: priority (urgent/high/normal/low) + time estimate.
-Direct. No fluff.`
+        build: f => `Help me set up a body doubling session. I have ADHD and I work significantly better when someone else is present.\n\nTask: ${f.task}\nDuration: ${f.duration}\nOption: ${f.option}\n\nGive me: a quick setup checklist (what to prepare before starting), how to frame the session so I stay on task, and what to do if I drift or get distracted during it.`
       },
-      { id:'microsteps', label:'Break Into Micro-Steps',
-        fields:[
-          { id:'task',   label:"Task I'm stuck on",  type:'text',   ph:'e.g. Write the proposal' },
-          { id:'why',    label:"Why I'm stuck",       type:'select', opts:['Too big','Boring',"Don't know where to start",'Fear','Perfectionism'] },
-          { id:'energy', label:'Energy',              type:'select', opts:['High','Medium','Low','Crashed'] }
+      {
+        label: "I need a dopamine reset right now",
+        fields: [
+          { id: 'situation', label: "What's happening that drained you?", type: 'text',   placeholder: 'e.g. Long meeting, boring task, bad news...' },
+          { id: 'time',      label: "How much time do you have?",         type: 'select', options: ['2–3 minutes', '5 minutes', '10 minutes', '15–20 minutes'] },
+          { id: 'location',  label: "Where are you right now?",           type: 'select', options: ['At my desk', 'At home', 'In an office/public space', 'Outside already'] }
         ],
-        build: f=>`I have ADHD and I'm stuck on: ${f.task}
-Why: ${f.why} | Energy: ${f.energy}
-
-Break into micro-steps (≤5 min each, first step embarrassingly small, max 7, matched to energy).
-Tell me exactly how to start in 60 seconds. Blunt friend tone.`
+        build: f => `I need a dopamine reset. I have ADHD and my brain is running on empty.\n\nWhat drained me: ${f.situation}\nTime I have: ${f.time}\nLocation: ${f.location}\n\nGive me 2–3 specific dopamine reset options that fit my time and location. Not generic advice — specific actions I can do right now. Then tell me when it's safe to go back to work.`
       },
-      { id:'timeblocks', label:'Plan My Day',
-        fields:[
-          { id:'energy', label:'Energy',           type:'select',   opts:['High','Medium','Low'] },
-          { id:'hours',  label:'Hours available',  type:'text',     ph:'e.g. 4 hours' },
-          { id:'mustdo', label:'Must-do tasks',    type:'textarea', ph:'Non-negotiables...' }
+      {
+        label: "I'm in an ADHD paralysis spiral",
+        fields: [
+          { id: 'context', label: "What's the spiral about?", type: 'textarea', placeholder: 'Too many choices, don\'t know where to start, everything feels equally important...' }
         ],
-        build: f=>`I have ADHD, planning my day.
-Energy: ${f.energy} | Hours: ${f.hours}
-Must-do: ${f.mustdo}
-
-Build a realistic time-blocked schedule. No block > 90 min. 2+ breaks. 20% buffer.
-Flag the block most likely to collapse. Short sentences.`
-      },
-      { id:'goalplan', label:'Turn Goal Into Plan',
-        fields:[
-          { id:'goal',     label:'My goal',      type:'textarea', ph:'' },
-          { id:'deadline', label:'Deadline',     type:'text',     ph:'Date or "no deadline"' },
-          { id:'fear',     label:'Biggest fear', type:'text',     ph:"What's most likely to derail me..." }
-        ],
-        build: f=>`I have ADHD, breaking down: ${f.goal}
-Deadline: ${f.deadline} | Biggest fear: ${f.fear}
-
-1. 5–7 milestones in order
-2. First physical action in next 24 hours
-3. Top ADHD trap for this project type
-
-Specific. No generic advice.`
-      },
-      { id:'timeblineness', label:'Time Blindness',
-        fields:[
-          { id:'task', label:'What I need to do',  type:'text', ph:'' },
-          { id:'est',  label:'My time estimate',   type:'text', ph:'vs. reality if I know it' }
-        ],
-        build: f=>`I have ADHD and struggle to feel time passing.
-Task: ${f.task} | My estimate: ${f.est}
-
-Build a time plan using visible external anchors — alarms, timers, countdowns. Make time feel real, not abstract.
-Don't explain time blindness to me. Just build the plan. Short sentences.`
-      },
-      { id:'workingmemory', label:'Working Memory',
-        fields:[
-          { id:'forgetting', label:'What I keep forgetting',           type:'textarea', ph:'Names, steps, where I left off...' },
-          { id:'tried',      label:"What I've tried that didn't stick", type:'text',     ph:'e.g. sticky notes, reminders, apps' },
-          { id:'env',        label:'My environment',                   type:'select',   opts:['At a desk','Phone only','Always moving','Shared space'] }
-        ],
-        build: f=>`I have ADHD and my working memory is failing me.
-What I keep forgetting: ${f.forgetting}
-What I've tried: ${f.tried}
-Environment: ${f.env}
-
-Build me a dead-simple external memory system for this specific situation.
-Match it to my environment. Tell me why my previous attempts failed for an ADHD brain.
-Give me one thing to set up today — not a full system overhaul. If it takes > 30 seconds to use, it won't survive.`
-      },
-      { id:'backward', label:'Backward Planning',
-        fields:[
-          { id:'deadline', label:'Deadline',        type:'text',     ph:'Date and time' },
-          { id:'goal',     label:'What I need to deliver', type:'textarea', ph:'Describe the goal or deliverable...' }
-        ],
-        build: f=>`I have ADHD and I need to plan backwards from a deadline.
-Deadline: ${f.deadline}
-What needs to be done: ${f.goal}
-
-I tend to underestimate time and leave things too late.
-Build a backward plan with specific dates for each milestone.
-Flag where ADHD is most likely to derail me and what to do about it.
-Specific dates. No encouragement. Talk straight.`
-      },
-      { id:'weeklyreview', label:'Weekly Review',
-        fields:[
-          { id:'wins',      label:'What I did this week',   type:'textarea', ph:'Rough notes are fine...' },
-          { id:'deadlines', label:"Next week's deadlines",  type:'text',     ph:'' }
-        ],
-        build: f=>`I have ADHD, just did my weekly review.
-This week: ${f.wins}
-Next week deadlines: ${f.deadlines}
-
-1. 3-sentence accomplishment summary (make it sound good — dopamine hit needed)
-2. Top 3 patterns (habits, blockers, energy)
-3. My Top 3 focus areas for next week + one thing to cut
-
-Sound like a real person, not a wellness app.`
+        build: f => `I'm in a full ADHD paralysis spiral and I need immediate help out of it.\n\nContext: ${f.context}\n\nDon't explain what paralysis is — I know. Skip to: one thing I can do in the next 90 seconds to interrupt the spiral, one decision I can just make right now (good enough is fine), and the absolute minimum to do today if everything else stays stuck.`
       }
     ]
   }
-
 };
 
-// General catch-all — always appended as last tab
-const GENERAL = {
-  id: 'general', label: '✨ Ask Anything',
-  fields: [
-    { id:'context',  label:'Quick context (optional)', type:'text',     ph:'e.g. working from home, deadline in 2 hours, really bad day...' },
-    { id:'question', label:'What I need help with',   type:'textarea', ph:"Ask anything — the tool adds ADHD context automatically." }
-  ],
-  build: f => `I have ADHD.${f.context ? ` Context: ${f.context}.` : ''}
+// ─────────────────────────────────────────────────────────────
+//  SETTINGS OVERLAY
+// ─────────────────────────────────────────────────────────────
+function onProviderChange() {
+  const p    = PROVIDERS[document.getElementById('providerSelect').value];
+  const hint = document.getElementById('providerHint');
+  hint.innerHTML  = p.hint;
+  hint.className  = `hint ${p.hintClass}`;
+  document.getElementById('keyLabel').textContent      = p.keyLabel;
+  document.getElementById('keyInput').placeholder      = p.keyPlaceholder;
+  document.getElementById('keyInput').value            = '';
+  populateModels(document.getElementById('providerSelect').value);
+}
 
-${f.question}
+function populateModels(providerKey) {
+  const sel    = document.getElementById('modelSelect');
+  const models = PROVIDERS[providerKey].models;
+  sel.innerHTML = '';
+  models.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.value;
+    opt.textContent = m.label;
+    sel.appendChild(opt);
+  });
+}
 
-Be direct and specific. No unnecessary padding or affirmations.`
-};
+function openSettings() {
+  const hasKey   = !!getKey();
+  const provider = getProvider();
+  document.getElementById('setupTitle').textContent        = hasKey ? '⚙ Settings' : '👋 One-time setup';
+  document.getElementById('cancelBtn').style.display       = hasKey ? 'block' : 'none';
+  document.getElementById('providerSelect').value          = provider;
+  populateModels(provider);
+  document.getElementById('modelSelect').value             = getModel();
+  document.getElementById('keyInput').value                = getKey();
+  document.getElementById('keyLabel').textContent          = PROVIDERS[provider].keyLabel;
+  document.getElementById('keyInput').placeholder          = PROVIDERS[provider].keyPlaceholder;
+  const hint = document.getElementById('providerHint');
+  hint.innerHTML = PROVIDERS[provider].hint;
+  hint.className = `hint ${PROVIDERS[provider].hintClass}`;
+  document.getElementById('overlay').classList.add('visible');
+}
 
-// ─── RUNTIME STATE ────────────────────────────────────────────────────
-let cfg = null;
-let promptIdx = 0;
+function closeSettings() {
+  document.getElementById('overlay').classList.remove('visible');
+}
+
+function saveSettings() {
+  const key      = document.getElementById('keyInput').value.trim();
+  const provider = document.getElementById('providerSelect').value;
+  const model    = document.getElementById('modelSelect').value;
+  if (!key) { alert('Please enter your API key.'); return; }
+  set(LS.provider, provider);
+  set(LS.key,      key);
+  set(LS.model,    model);
+  closeSettings();
+  updateUI();
+}
+
+// ─────────────────────────────────────────────────────────────
+//  APP
+// ─────────────────────────────────────────────────────────────
+const params  = new URLSearchParams(window.location.search);
+const pageKey = params.get('page') || 'home';
+const page    = PAGES[pageKey] || PAGES.home;
+
+function updateUI() {
+  const hasKey   = !!getKey();
+  const provider = getProvider();
+  const p        = PROVIDERS[provider];
+  document.getElementById('noKeyBanner').style.display = hasKey ? 'none' : 'block';
+  document.getElementById('footer').textContent        = p.footerText;
+  updateModelBadge();
+}
+
+function updateModelBadge() {
+  const provider = getProvider();
+  const models   = PROVIDERS[provider]?.models || [];
+  const model    = getModel();
+  const found    = models.find(m => m.value === model);
+  const label    = found ? found.label.split(' — ')[0] : model;
+  document.getElementById('modelBadge').textContent = `${PROVIDERS[provider]?.name || ''} · ${label}`;
+}
 
 function init() {
-  const page = new URLSearchParams(window.location.search).get('page') || 'general';
+  document.getElementById('pageIcon').textContent  = page.icon;
+  document.getElementById('pageTitle').textContent = page.title;
+  document.title = `ADHD Brain OS — ${page.title}`;
 
-  if (PAGES[page]) {
-    cfg = { ...PAGES[page], prompts: [...PAGES[page].prompts, GENERAL] };
-  } else {
-    cfg = { title: '🤖 AI Launcher', subtitle: 'Fill in the fields — your AI gets the rest.', prompts: [GENERAL] };
-  }
-
-  document.getElementById('page-title').textContent    = cfg.title;
-  document.getElementById('page-subtitle').textContent = cfg.subtitle;
-
-  buildTabs();
-  renderForm(0);
-  wireControls();
-}
-
-function buildTabs() {
-  const el = document.getElementById('prompt-tabs');
-  el.innerHTML = '';
-  cfg.prompts.forEach((p, i) => {
-    const btn = document.createElement('button');
-    btn.className = 'prompt-tab' + (i === 0 ? ' active' : '');
-    btn.textContent = p.label;
-    btn.onclick = () => {
-      document.querySelectorAll('.prompt-tab').forEach(t => t.classList.remove('active'));
-      btn.classList.add('active');
-      promptIdx = i;
-      renderForm(i);
-      clearStatus();
-    };
-    el.appendChild(btn);
+  const sel = document.getElementById('templateSelect');
+  page.templates.forEach((t, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = t.label;
+    sel.appendChild(opt);
   });
+
+  renderFields(0);
+  updateUI();
+  if (!getKey()) openSettings();
 }
 
-function renderForm(i) {
-  promptIdx = i;
-  const { fields } = cfg.prompts[i];
-  const el = document.getElementById('form-container');
-  el.innerHTML = '';
-  fields.forEach(f => {
-    const g = document.createElement('div');
-    g.className = 'form-group';
+function onTemplateChange() {
+  renderFields(parseInt(document.getElementById('templateSelect').value));
+  resetResponse();
+}
+
+function renderFields(idx) {
+  const tpl = page.templates[idx];
+  const container = document.getElementById('fields');
+  container.innerHTML = '';
+  tpl.fields.forEach(f => {
+    const group = document.createElement('div');
+    group.className = 'field-group';
     const lbl = document.createElement('label');
-    lbl.htmlFor = `f-${f.id}`;
     lbl.textContent = f.label;
-    g.appendChild(lbl);
-    let input;
+    lbl.htmlFor = `f-${f.id}`;
+    group.appendChild(lbl);
+    let el;
     if (f.type === 'textarea') {
-      input = document.createElement('textarea');
-      input.placeholder = f.ph || '';
+      el = document.createElement('textarea');
+      el.placeholder = f.placeholder || '';
     } else if (f.type === 'select') {
-      input = document.createElement('select');
-      (f.opts || []).forEach(o => {
+      el = document.createElement('select');
+      el.className = 'field-input';
+      f.options.forEach(o => {
         const opt = document.createElement('option');
         opt.value = opt.textContent = o;
-        input.appendChild(opt);
+        el.appendChild(opt);
       });
     } else {
-      input = document.createElement('input');
-      input.type = 'text';
-      input.placeholder = f.ph || '';
+      el = document.createElement('input');
+      el.type = 'text';
+      el.placeholder = f.placeholder || '';
     }
-    input.id = `f-${f.id}`;
-    input.dataset.fid = f.id;
-    g.appendChild(input);
-    el.appendChild(g);
+    el.id = `f-${f.id}`;
+    group.appendChild(el);
+    container.appendChild(group);
   });
 }
 
-function getValues() {
+// ─────────────────────────────────────────────────────────────
+//  SEND PROMPT
+// ─────────────────────────────────────────────────────────────
+async function sendPrompt() {
+  const apiKey = getKey();
+  if (!apiKey) { openSettings(); return; }
+
+  const idx = parseInt(document.getElementById('templateSelect').value);
+  const tpl = page.templates[idx];
+
   const vals = {};
-  cfg.prompts[promptIdx].fields.forEach(f => {
-    const el = document.getElementById(`f-${f.id}`);
-    vals[f.id] = el ? el.value.trim() : '';
+  let empty  = false;
+  tpl.fields.forEach(f => {
+    const el  = document.getElementById(`f-${f.id}`);
+    const val = el.value.trim();
+    if (!val && f.type !== 'select') empty = true;
+    vals[f.id] = val;
   });
-  return vals;
+  if (empty) { alert('Please fill in all fields before sending.'); return; }
+
+  const prompt   = tpl.build(vals);
+  const provider = PROVIDERS[getProvider()];
+  const model    = getModel();
+  const btn      = document.getElementById('sendBtn');
+  const btnText  = document.getElementById('btnText');
+  const wrap     = document.getElementById('responseWrap');
+  const area     = document.getElementById('responseArea');
+
+  btn.disabled = true;
+  btnText.textContent = 'Thinking...';
+  wrap.classList.add('visible');
+  area.innerHTML = '<span class="thinking">Getting your answer…</span>';
+  updateModelBadge();
+
+  try {
+    const res = await fetch(provider.endpoint, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model,
+        stream: true,
+        temperature: 0.7,
+        max_tokens: 600,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a practical ADHD productivity coach. Be direct and concise. Give specific, actionable advice. No filler or unnecessary encouragement. Use short paragraphs or numbered steps where helpful.'
+          },
+          { role: 'user', content: prompt }
+        ]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error?.message || `HTTP ${res.status}`);
+    }
+
+    area.textContent = '';
+    const reader  = res.body.getReader();
+    const decoder = new TextDecoder();
+    let   buffer  = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const raw = line.slice(6);
+        if (raw === '[DONE]') continue;
+        try {
+          const delta = JSON.parse(raw).choices?.[0]?.delta?.content || '';
+          area.textContent += delta;
+          area.scrollTop = area.scrollHeight;
+        } catch {}
+      }
+    }
+
+  } catch (err) {
+    area.textContent = `Error: ${err.message}\n\nCheck your API key in ⚙ Settings.`;
+  } finally {
+    btn.disabled = false;
+    btnText.textContent = 'Send to AI →';
+  }
 }
 
-function buildPrompt() {
-  return cfg.prompts[promptIdx].build(getValues());
+function resetResponse() {
+  document.getElementById('responseWrap').classList.remove('visible');
+  document.getElementById('responseArea').textContent = '';
 }
-
-function openAI(key, text) {
-  window.open(AI[key](text), '_blank');
-}
-
-function wireControls() {
-  const toggle     = document.getElementById('compare-toggle');
-  const compareRow = document.getElementById('compare-row');
-  const btnSend    = document.getElementById('btn-send');
-  const btnCompare = document.getElementById('btn-compare');
-  const btnCopy    = document.getElementById('btn-copy');
-
-  toggle.onchange = () => {
-    const on = toggle.checked;
-    compareRow.classList.toggle('visible', on);
-    btnSend.style.display    = on ? 'none' : '';
-    btnCompare.style.display = on ? ''     : 'none';
-  };
-
-  btnSend.onclick = () => {
-    openAI(document.getElementById('ai-primary').value, buildPrompt());
-    status('Opened in new tab ✓', 'ok');
-  };
-
-  btnCompare.onclick = () => {
-    const prompt = buildPrompt();
-    openAI(document.getElementById('ai-primary').value,   prompt);
-    setTimeout(() => openAI(document.getElementById('ai-secondary').value, prompt), 250);
-    status('Opened both in new tabs ✓', 'ok');
-  };
-
-  btnCopy.onclick = () => {
-    navigator.clipboard.writeText(buildPrompt())
-      .then(()  => status('Copied to clipboard ✓', 'ok'))
-      .catch(()  => status('Copy failed — use Ctrl+A / Cmd+A to select manually', 'err'));
-  };
-}
-
-function status(msg, cls) {
-  const el = document.getElementById('status');
-  el.textContent = msg;
-  el.className = `status ${cls || ''}`;
-}
-function clearStatus() { status(''); }
 
 init();
 </script>
